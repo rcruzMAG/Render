@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Render Studio — Local AI Image & Video Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">◆</span>
+      <div>
+        <h1>Render Studio</h1>
+        <p>FLUX.1 · Wan 2.2 · ComfyUI — running on your GPU</p>
+      </div>
+    </div>
+    <div id="status" class="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">checking engine…</span>
+    </div>
+  </header>
+
+  <nav id="tabs"></nav>
+
+  <main>
+    <section id="panel" class="panel"></section>
+    <aside class="results">
+      <h2>Output</h2>
+      <div id="job-state" class="job-state"></div>
+      <div id="output" class="output"></div>
+      <h2>Recent</h2>
+      <div id="gallery" class="gallery"></div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

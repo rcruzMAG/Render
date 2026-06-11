@@ -1,0 +1,30 @@
+{
+  "comfyui_url": "http://127.0.0.1:8188",
+  "comfyui_loras_dir": "",
+  "host": "127.0.0.1",
+  "port": 8500,
+  "models": {
+    "flux_dev_unet": "flux1-dev.safetensors",
+    "flux_schnell_unet": "flux1-schnell.safetensors",
+    "flux_kontext_unet": "flux1-kontext-dev.safetensors",
+    "flux_clip_l": "clip_l.safetensors",
+    "flux_t5": "t5xxl_fp8_e4m3fn.safetensors",
+    "flux_vae": "ae.safetensors",
+    "sdxl_checkpoint": "sd_xl_base_1.0.safetensors",
+    "wan_t2v_high": "wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors",
+    "wan_t2v_low": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+    "wan_i2v_high": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+    "wan_i2v_low": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+    "wan_animate": "wan2.2_animate_14B_fp8_scaled.safetensors",
+    "wan_text_encoder": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "wan_vae": "wan_2.1_vae.safetensors",
+    "controlnet_depth": "controlnet-depth-sdxl-1.0.safetensors",
+    "controlnet_canny": "controlnet-canny-sdxl-1.0.safetensors",
+    "controlnet_mlsd": "controlnet-mlsd-sdxl-1.0.safetensors",
+    "upscale_model": "4x-UltraSharp.pth"
+  },
+  "providers": {
+    "fal": { "api_key": "" },
+    "replicate": { "api_token": "" }
+  }
+}
