@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, lora_manager, providers, workflows
+from . import config, lora_manager, providers, setup_manager, workflows
 from .comfy_client import ComfyClient, ComfyError
 from .presets import PRESETS
 
@@ -174,6 +174,42 @@ async def loras_download(req: LoraDownload):
     return {"saved_to": path}
 
 
+# ----------------------------------------------------- one-click setup API
+
+@app.get("/api/setup/state")
+async def setup_state():
+    return await setup_manager.detect()
+
+
+class SetupAction(BaseModel):
+    action: str                     # install_comfyui | start_engine | download_pack
+    pack_id: str | None = None
+
+
+@app.post("/api/setup/run")
+async def setup_run(req: SetupAction):
+    if req.action not in ("install_comfyui", "start_engine", "download_pack"):
+        raise HTTPException(400, f"unknown action '{req.action}'")
+    try:
+        job = await setup_manager.run_action(req.action, pack_id=req.pack_id)
+    except RuntimeError as e:
+        raise HTTPException(409, str(e))
+    return {"id": job["id"]}
+
+
+@app.get("/api/setup/jobs/{job_id}")
+async def setup_job(job_id: str):
+    job = setup_manager.JOBS.get(job_id)
+    if not job:
+        raise HTTPException(404, "no such setup job")
+    return job
+
+
+@app.post("/api/setup/stop_engine")
+async def setup_stop_engine():
+    return {"stopped": setup_manager.stop_engine()}
+
+
 @app.get("/api/settings")
 async def get_settings():
     cfg = config.load()
@@ -225,5 +261,12 @@ async def spa_fallback(request, exc):
 
 if __name__ == "__main__":
     cfg = config.load()
-    uvicorn.run(app, host=cfg.get("host", "127.0.0.1"),
-                port=int(cfg.get("port", 8500)))
+    host, port = cfg.get("host", "127.0.0.1"), int(cfg.get("port", 8500))
+    if cfg.get("open_browser", True):
+        # Pop the UI as soon as the server is up so the user lands straight
+        # in the app (and its setup wizard on first run).
+        import threading
+        import webbrowser
+        threading.Timer(1.2, webbrowser.open,
+                        args=(f"http://{host}:{port}",)).start()
+    uvicorn.run(app, host=host, port=port)

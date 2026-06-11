@@ -21,39 +21,37 @@ for a given task — switchable per-request in Settings.
 
 ---
 
-## Quick start
+## Quick start — one double-click
 
-### 1. Install ComfyUI (the local engine)
+- **Windows:** double-click **`Start-RenderStudio.bat`**. If Python is missing
+  it offers to install it for you (winget) after a Y/N prompt.
+- **macOS / Linux:** run **`./start.sh`**.
 
-```bash
-git clone https://github.com/comfyanonymous/ComfyUI
-cd ComfyUI
-pip install -r requirements.txt
-python main.py            # serves on http://127.0.0.1:8188
-```
+The launcher installs the app's dependencies, starts the server, and opens
+your browser at **http://127.0.0.1:8500**. On first run the app lands on the
+**Setup** tab, which does everything else *for* you on this machine:
 
-Download the models you want into `ComfyUI/models/`:
+1. **⚡ Set everything up & start generating** — one button that clones
+   ComfyUI, installs PyTorch matched to your detected GPU (CUDA / Apple
+   Silicon / CPU), downloads the FLUX.1-dev image model, launches the engine,
+   and drops you on the Generate tab. Live progress and command logs stream
+   into the page.
+2. **Model packs** — each remaining function (video, Kontext editing,
+   architecture ControlNet, character animate/swap, upscaler) is a one-click
+   pack download with its size shown up front. Downloads resume if
+   interrupted. An existing ComfyUI install is auto-detected and reused —
+   nothing is re-downloaded.
 
-- `diffusion_models/flux1-dev.safetensors` (+ `clip_l.safetensors`, `t5xxl_fp8_e4m3fn.safetensors` in `text_encoders/`, `ae.safetensors` in `vae/`)
-- `diffusion_models/flux1-kontext-dev.safetensors` (image editing)
-- `checkpoints/sd_xl_base_1.0.safetensors` or `juggernautXL_*.safetensors` (SDXL — biggest LoRA/ControlNet ecosystem)
-- `diffusion_models/wan2.2_t2v_*.safetensors`, `wan2.2_i2v_*.safetensors`, `wan2.2_animate_*.safetensors` (+ `umt5_xxl_fp8_*.safetensors` text encoder, `wan_2.1_vae.safetensors`)
-- `controlnet/` — depth / canny / MLSD ControlNets for the architecture tools
-- `upscale_models/4x-UltraSharp.pth`
+If you open a tab whose models aren't installed yet, a banner offers to
+install exactly what's missing (with the download size) — one click, then
+generate. The engine runs as a managed child process: the app starts and
+stops it for you; no terminal needed after the first double-click.
 
-Exact filenames are configurable in `config.json` — point them at whatever
-variants (fp8, GGUF, etc.) fit your VRAM.
-
-### 2. Run Render Studio
-
-```bash
-pip install -r requirements.txt
-python -m backend.main           # serves on http://127.0.0.1:8500
-```
-
-Open **http://127.0.0.1:8500**. The header shows live status of the ComfyUI
-connection. Everything runs locally; nothing leaves your machine unless you
-explicitly enable a cloud provider in Settings.
+Everything runs locally; nothing leaves your machine unless you explicitly
+enable a cloud provider in Settings. Model packs use ungated single-file
+fp8 builds (Comfy-Org repackages) so there's no Hugging Face login. Exact
+filenames/URLs live in `backend/setup_manager.py` and `config.json` if you
+want different variants (GGUF, 14B Wan, etc.).
 
 ---
 

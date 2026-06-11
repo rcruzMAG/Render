@@ -9,7 +9,19 @@ const api = async (path, opts) => {
 
 let PRESETS = {};
 let LORAS = [];          // lora filenames known to ComfyUI
+let SETUP = null;        // /api/setup/state snapshot
 let currentTab = "image";
+
+// Which model packs each tab needs; drives the "install missing" banners.
+const TAB_PACKS = {
+  image: ["flux_image"],
+  video: ["wan_video"],
+  modify: ["kontext"],
+  architecture: ["sdxl", "controlnet"],
+  animate: ["wan_animate"],
+  swap: ["wan_animate"],
+  upscale: ["upscaler"],
+};
 
 /* ---------------------------------------------------------- tiny dom utils */
 
@@ -149,6 +161,72 @@ function applyPreset(p, keys) {
 /* ------------------------------------------------------------------- tabs */
 
 const TABS = {
+  setup: {
+    label: "🚀 Setup",
+    async render(panel) {
+      SETUP = await api("/api/setup/state");
+      const s = SETUP;
+      panel.append(
+        el("h2", {}, "Setup"),
+        el("p", { class: "desc" },
+          "Render Studio installs everything for you — the ComfyUI engine, PyTorch for your GPU, and the models — by running the commands on this machine. Click a button, accept, done."));
+
+      // One-button path: install engine → grab the image pack → start.
+      if (!s.engine_running || !s.packs.flux_image.installed) {
+        panel.append(el("button", { class: "primary", id: "quick-setup",
+          onclick: quickSetup },
+          "⚡ Set everything up & start generating (installs engine + image model)"));
+      } else {
+        panel.append(el("div", { class: "hint" },
+          "✓ You're fully set up for image generation. Install more packs below to unlock the other tabs."));
+      }
+
+      panel.append(el("div", { class: "sys-grid" },
+        sysCard("GPU", s.gpu.name + (s.gpu.vram_gb ? ` · ${s.gpu.vram_gb} GB` : "")),
+        sysCard("Python", s.python),
+        sysCard("git", s.git ? "installed ✓" : "missing — install from git-scm.com"),
+        sysCard("Disk free", `${s.disk_free_gb} GB`)));
+
+      panel.append(
+        stepCard(1, "ComfyUI engine", s.comfyui_installed,
+          s.comfyui_installed
+            ? `Installed at ${s.comfyui_dir}`
+            : `Will be installed to ${s.comfyui_dir} (engine + PyTorch for your GPU, ~5–10 min)`,
+          s.comfyui_installed ? null :
+            el("button", { class: "secondary",
+              onclick: () => runSetup("install_comfyui") }, "Install ComfyUI")),
+        stepCard(2, "Engine running", s.engine_running,
+          s.engine_running ? "Connected and ready."
+            : "Render Studio launches and manages the engine process for you.",
+          s.engine_running
+            ? el("button", { class: "secondary", onclick: async () => {
+                await api("/api/setup/stop_engine", { method: "POST" });
+                showTab("setup");
+              } }, "Stop engine")
+            : el("button", { class: "secondary", disabled: s.comfyui_installed ? undefined : "",
+                onclick: () => runSetup("start_engine") }, "▶ Start engine")));
+
+      panel.append(el("h2", { style: "margin-top:18px" }, "3 · Model packs"),
+        el("p", { class: "desc" },
+          "Each pack unlocks a tab. Downloads resume if interrupted."));
+      const grid = el("div", { class: "lora-grid" });
+      for (const [id, p] of Object.entries(s.packs)) {
+        grid.append(el("div", { class: "lora-card" },
+          el("h4", {}, (p.installed ? "✓ " : "") + p.label),
+          el("span", { class: "base" }, `${p.size_gb} GB · unlocks: ${p.tasks.join(", ")}`),
+          el("div", { class: "actions" },
+            p.installed
+              ? el("span", { style: "color:var(--ok);font-size:13px" }, "installed")
+              : el("button", { class: "secondary",
+                  onclick: () => runSetup("download_pack", id) },
+                  `⬇ Install (${p.size_gb} GB)`))));
+      }
+      panel.append(grid,
+        el("div", { id: "setup-progress", class: "setup-progress" }));
+      renderActiveSetupJob();
+    },
+  },
+
   image: {
     label: "🖼 Image Generation",
     render(panel) {
@@ -474,6 +552,138 @@ const TABS = {
   },
 };
 
+/* ------------------------------------------------------------- setup flow */
+
+function sysCard(label, value) {
+  return el("div", { class: "sys-card" },
+    el("span", { class: "sys-label" }, label), el("span", {}, value));
+}
+
+function stepCard(num, title, done, desc, action) {
+  const card = el("div", { class: `step-card ${done ? "done" : ""}` },
+    el("div", { class: "step-num" }, done ? "✓" : String(num)),
+    el("div", { class: "step-body" },
+      el("h4", {}, title), el("p", {}, desc)));
+  if (action) card.append(action);
+  return card;
+}
+
+/* Kick a setup action and resolve when its job finishes; progress + live
+   log render into #setup-progress. */
+function runSetup(action, packId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { id } = await api("/api/setup/run", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, pack_id: packId || null }) });
+      watchSetupJob(id, resolve, reject);
+    } catch (e) {
+      renderSetupError(e.message);
+      reject(e);
+    }
+  });
+}
+
+function watchSetupJob(id, resolve, reject) {
+  const tick = async () => {
+    let job;
+    try { job = await api(`/api/setup/jobs/${id}`); }
+    catch (e) { renderSetupError(e.message); return reject?.(e); }
+    renderSetupJob(job);
+    if (job.status === "running") return setTimeout(tick, 1200);
+    if (job.status === "done") {
+      if (currentTab === "setup") showTab("setup");   // refresh checklist
+      return resolve?.(job);
+    }
+    reject?.(new Error(job.detail));
+  };
+  tick();
+}
+
+function setupProgressBox() {
+  let box = $("#setup-progress");
+  if (!box) {   // user navigated away from Setup; float it over the panel
+    box = el("div", { id: "setup-progress", class: "setup-progress floating" });
+    document.body.append(box);
+  }
+  return box;
+}
+
+function renderSetupJob(job) {
+  const box = setupProgressBox();
+  const pct = Math.round((job.progress || 0) * 100);
+  box.replaceChildren(
+    el("div", { class: "prog-head" },
+      el("strong", {}, `${job.kind}${job.status === "done" ? " — done ✓" : ""}`),
+      el("span", {}, job.status === "running" ? `${pct}%` : job.status)),
+    el("div", { class: "prog-bar" },
+      el("div", { class: `prog-fill ${job.status}`, style: `width:${pct}%` })),
+    el("div", { class: "prog-detail" }, job.detail || ""),
+    el("pre", { class: "prog-log" }, job.log.slice(-12).join("\n")));
+  const log = box.querySelector(".prog-log");
+  log.scrollTop = log.scrollHeight;
+  if (job.status !== "running" && box.classList.contains("floating")) {
+    setTimeout(() => box.remove(), 6000);
+  }
+}
+
+function renderSetupError(msg) {
+  setupProgressBox().replaceChildren(
+    el("div", { class: "prog-detail", style: "color:var(--err)" }, msg));
+}
+
+/* The one-button path: engine → image model → start → land on Generate. */
+async function quickSetup() {
+  const btn = $("#quick-setup");
+  if (btn) { btn.disabled = true; btn.textContent = "Setting everything up…"; }
+  try {
+    SETUP = await api("/api/setup/state");
+    if (!SETUP.comfyui_installed) await runSetup("install_comfyui");
+    SETUP = await api("/api/setup/state");
+    if (!SETUP.packs.flux_image.installed) await runSetup("download_pack", "flux_image");
+    if (!SETUP.engine_running) await runSetup("start_engine");
+    SETUP = await api("/api/setup/state");
+    refreshStatus(); loadModels();
+    showTab("image");
+    $("#job-state").textContent = "Setup complete — you're ready to generate.";
+  } catch (e) {
+    renderSetupError(`Setup stopped: ${e.message}`);
+    if (btn) { btn.disabled = false; btn.textContent = "⚡ Retry setup"; }
+  }
+}
+
+/* Banner shown on a generate tab when its model pack / engine is missing. */
+function missingBanner(tabKey) {
+  if (!SETUP) return null;
+  const missing = (TAB_PACKS[tabKey] || [])
+    .filter((p) => SETUP.packs?.[p] && !SETUP.packs[p].installed);
+  if (!missing.length && SETUP.engine_running) return null;
+  const banner = el("div", { class: "banner" });
+  if (!SETUP.engine_running) {
+    banner.append(el("span", {},
+      SETUP.comfyui_installed ? "The local engine isn't running."
+        : "The local engine isn't installed yet."),
+      el("button", { class: "secondary", onclick: async () => {
+        if (!SETUP.comfyui_installed) { showTab("setup"); return; }
+        banner.firstChild.textContent = "Starting engine…";
+        await runSetup("start_engine").catch(() => {});
+        SETUP = await api("/api/setup/state");
+        refreshStatus(); showTab(tabKey);
+      } }, SETUP.comfyui_installed ? "▶ Start engine" : "Go to Setup"));
+  }
+  for (const p of missing) {
+    const pack = SETUP.packs[p];
+    banner.append(el("span", {}, `Missing models: ${pack.label}.`),
+      el("button", { class: "secondary", onclick: async (e) => {
+        e.target.disabled = true; e.target.textContent = "installing…";
+        await runSetup("download_pack", p).catch(() => {});
+        SETUP = await api("/api/setup/state");
+        showTab(tabKey);
+      } }, `⬇ Install now (${pack.size_gb} GB)`));
+  }
+  return banner;
+}
+
 /* ----------------------------------------------------------- lora hub api */
 
 async function searchLoras() {
@@ -597,17 +807,30 @@ function showTab(key) {
     b.classList.toggle("active", b.dataset.tab === key));
   const panel = $("#panel");
   panel.replaceChildren();
+  if (key !== "setup") {
+    const banner = missingBanner(key);
+    if (banner) panel.append(banner);
+  }
   TABS[key].render(panel);
+}
+
+function renderActiveSetupJob() {
+  const active = SETUP?.active_jobs?.[0];
+  if (active) watchSetupJob(active.id);
 }
 
 async function boot() {
   PRESETS = await api("/api/presets").catch(() => ({}));
+  SETUP = await api("/api/setup/state").catch(() => null);
   await loadModels();
   const nav = $("#tabs");
   for (const [key, tab] of Object.entries(TABS)) {
     nav.append(el("button", { "data-tab": key, onclick: () => showTab(key) }, tab.label));
   }
-  showTab("image");
+  // First run → land on Setup; otherwise go straight to generating.
+  const ready = SETUP && SETUP.engine_running &&
+    Object.values(SETUP.packs).some((p) => p.installed);
+  showTab(ready ? "image" : "setup");
   refreshStatus();
   setInterval(refreshStatus, 15000);
   refreshGallery();

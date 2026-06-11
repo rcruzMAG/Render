@@ -64,24 +64,26 @@ PRESETS = {
         },
     },
     "video": {
-        "fast_480p": {
-            "label": "480p fast (with Lightning LoRA)",
-            "width": 832, "height": 480, "frames": 81, "fps": 16,
-            "steps": 4, "cfg": 1.0,
-            "notes": "Requires the Wan 2.2 Lightning (lightx2v) LoRA from the "
-                     "LoRA Hub. 5–10× faster.",
+        "ti2v_720p": {
+            "label": "Wan 2.2 5B — 720p, 8GB+ VRAM (recommended)",
+            "width": 1280, "height": 704, "frames": 121, "fps": 24,
+            "steps": 20, "cfg": 5.0,
+            "notes": "The model the setup wizard installs. 121 frames @ 24 fps "
+                     "≈ 5 s. Single-stage sampling.",
         },
-        "quality_480p": {
-            "label": "480p quality (recommended)",
+        "ti2v_fast": {
+            "label": "Wan 2.2 5B — fast draft",
+            "width": 896, "height": 512, "frames": 73, "fps": 24,
+            "steps": 14, "cfg": 5.0,
+            "notes": "Lower res + fewer frames for quick iteration; re-run "
+                     "keepers at 720p.",
+        },
+        "wan14b_480p": {
+            "label": "Wan 2.2 14B — 480p quality (16 GB+ VRAM)",
             "width": 832, "height": 480, "frames": 81, "fps": 16,
             "steps": 20, "cfg": 4.0,
-            "notes": "Native Wan 2.2 sampling, two-stage high/low noise.",
-        },
-        "quality_720p": {
-            "label": "720p quality (16 GB+ VRAM)",
-            "width": 1280, "height": 720, "frames": 81, "fps": 16,
-            "steps": 24, "cfg": 4.0,
-            "notes": "Best quality; roughly 4× the compute of 480p.",
+            "notes": "Two-stage high/low-noise sampling. Needs the 14B models "
+                     "(not installed by the wizard by default).",
         },
     },
     "animate": {

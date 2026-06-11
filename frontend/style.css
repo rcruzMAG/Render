@@ -190,6 +190,66 @@ button.secondary:hover { border-color: var(--accent); }
 }
 .search-bar input { flex: 1; }
 
+/* ---- setup wizard ---- */
+.sys-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px; margin: 16px 0;
+}
+.sys-card {
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.sys-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+
+.step-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; margin-bottom: 10px;
+}
+.step-card.done { border-color: rgba(61,220,151,.4); }
+.step-num {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--panel); border: 1px solid var(--border);
+  font-weight: 600; color: var(--accent);
+}
+.step-card.done .step-num { color: var(--ok); border-color: var(--ok); }
+.step-body { flex: 1; }
+.step-body h4 { margin: 0 0 3px; font-size: 14px; }
+.step-body p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+.banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  background: rgba(124, 92, 255, .1); border: 1px solid var(--accent);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+  font-size: 13.5px;
+}
+
+.setup-progress { margin-top: 16px; }
+.setup-progress.floating {
+  position: fixed; right: 20px; bottom: 20px; width: 380px; z-index: 50;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+.prog-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.prog-bar {
+  height: 8px; background: var(--panel-2); border-radius: 999px; overflow: hidden;
+}
+.prog-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width .6s;
+}
+.prog-fill.error { background: var(--err); }
+.prog-fill.done { background: var(--ok); }
+.prog-detail { font-size: 12.5px; color: var(--muted); margin: 7px 0; }
+.prog-log {
+  background: #0a0c10; border: 1px solid var(--border); border-radius: 8px;
+  font: 11.5px/1.5 ui-monospace, monospace; color: #9aa4b8;
+  padding: 10px; max-height: 170px; overflow-y: auto; white-space: pre-wrap;
+  margin: 0;
+}
+
 table.params { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 table.params td, table.params th {
   border-bottom: 1px solid var(--border); text-align: left; padding: 7px 8px;
