@@ -162,7 +162,7 @@ function applyPreset(p, keys) {
 
 const TABS = {
   setup: {
-    label: "🚀 Setup",
+    label: "Setup",
     async render(panel) {
       SETUP = await api("/api/setup/state");
       const s = SETUP;
@@ -175,7 +175,7 @@ const TABS = {
       if (!s.engine_running || !s.packs.flux_image.installed) {
         panel.append(el("button", { class: "primary", id: "quick-setup",
           onclick: quickSetup },
-          "⚡ Set everything up & start generating (installs engine + image model)"));
+          "Set everything up & start generating (installs engine + image model)"));
       } else {
         panel.append(el("div", { class: "hint" },
           "✓ You're fully set up for image generation. Install more packs below to unlock the other tabs."));
@@ -228,7 +228,7 @@ const TABS = {
   },
 
   image: {
-    label: "🖼 Image Generation",
+    label: "Image Generation",
     render(panel) {
       panel.append(
         el("h2", {}, "Image Generation"),
@@ -270,7 +270,7 @@ const TABS = {
   },
 
   video: {
-    label: "🎬 Video Generation",
+    label: "Video Generation",
     render(panel) {
       panel.append(
         el("h2", {}, "Video Generation — Wan 2.2"),
@@ -304,7 +304,7 @@ const TABS = {
   },
 
   modify: {
-    label: "✏️ Image Modifier",
+    label: "Image Modifier",
     render(panel) {
       panel.append(
         el("h2", {}, "Image Modifier"),
@@ -334,7 +334,7 @@ const TABS = {
   },
 
   architecture: {
-    label: "🏛 Architecture & Interior",
+    label: "Architecture & Interior",
     render(panel) {
       panel.append(
         el("h2", {}, "Architecture & Interior Visualizer"),
@@ -375,7 +375,7 @@ const TABS = {
   },
 
   animate: {
-    label: "🕺 Character Animator",
+    label: "Character Animator",
     render(panel) {
       panel.append(
         el("h2", {}, "Character Animator"),
@@ -406,7 +406,7 @@ const TABS = {
   },
 
   swap: {
-    label: "🔄 Video Character Swap",
+    label: "Video Character Swap",
     render(panel) {
       panel.append(
         el("h2", {}, "Video Character Swap"),
@@ -434,7 +434,7 @@ const TABS = {
   },
 
   upscale: {
-    label: "🔍 Upscale & Refine",
+    label: "Upscale & Refine",
     render(panel) {
       panel.append(
         el("h2", {}, "Upscale & Refine"),
@@ -452,7 +452,7 @@ const TABS = {
   },
 
   loras: {
-    label: "🧩 LoRA Hub",
+    label: "LoRA Hub",
     async render(panel) {
       panel.append(
         el("h2", {}, "LoRA Hub"),
@@ -487,7 +487,7 @@ const TABS = {
   },
 
   params: {
-    label: "📐 Parameter Guide",
+    label: "Parameter Guide",
     render(panel) {
       panel.append(el("h2", {}, "Recommended Parameters"),
         el("p", { class: "desc" },
@@ -524,7 +524,7 @@ const TABS = {
   },
 
   settings: {
-    label: "⚙️ Settings",
+    label: "Settings",
     async render(panel) {
       const s = await api("/api/settings");
       panel.append(
@@ -617,7 +617,7 @@ function renderSetupJob(job) {
       el("strong", {}, `${job.kind}${job.status === "done" ? " — done ✓" : ""}`),
       el("span", {}, job.status === "running" ? `${pct}%` : job.status)),
     el("div", { class: "prog-bar" },
-      el("div", { class: `prog-fill ${job.status}`, style: `width:${pct}%` })),
+      el("div", { class: `prog-fill ${job.status}`, style: `transform:scaleX(${pct / 100})` })),
     el("div", { class: "prog-detail" }, job.detail || ""),
     el("pre", { class: "prog-log" }, job.log.slice(-12).join("\n")));
   const log = box.querySelector(".prog-log");
@@ -648,7 +648,7 @@ async function quickSetup() {
     $("#job-state").textContent = "Setup complete — you're ready to generate.";
   } catch (e) {
     renderSetupError(`Setup stopped: ${e.message}`);
-    if (btn) { btn.disabled = false; btn.textContent = "⚡ Retry setup"; }
+    if (btn) { btn.disabled = false; btn.textContent = "Retry setup"; }
   }
 }
 
